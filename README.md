@@ -1,4 +1,4 @@
-bulkhead-mailer
+bulkhead-test
 ===============
 
-A Bulkhead service that allows SailsJS projects to easily use NodeMailer.
+A functional testing suite for Bulkhead services.
