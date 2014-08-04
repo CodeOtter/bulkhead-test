@@ -30,6 +30,8 @@
   },
   "homepage": "https://github.com/CodeOtter/bulkhead-test",
   "dependencies": {
-    "mocha": "^1.21.3"
+    "barrels": "0.0.4",
+    "mocha": "^1.21.3",
+    "supertest": "^0.13.0"
   }
 }
