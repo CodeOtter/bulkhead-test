@@ -27,6 +27,7 @@ module.exports = {
 		if(this.singleton === null) {
 			before(function(done) {
 				// @TODO: Create a test database if it doesn't exist
+				
 				Sails.lift(settings || {
 					log: {
 						level: 'error'
@@ -40,6 +41,13 @@ module.exports = {
 						    password: 'root', 
 						    database: 'test'
 						  }
+					},
+					globals: {
+						_: true,
+						async: true,
+						sails: true,
+						services: true,
+						models: true
 					}
 				}, function(err, sails) {
 					self.singleton = sails;
