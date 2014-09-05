@@ -27,8 +27,6 @@ module.exports = {
 		var self = this;
 		if(this.singleton === null) {
 			before(function(done) {
-				// @TODO: Create a test database if it doesn't exist
-				
 				Sails.lift(settings || {
 					log: {
 						level: 'error'
@@ -51,7 +49,7 @@ module.exports = {
 						models: true
 					},
 					models: {
-						migrate: 'safe'
+						migrate: 'alter'
 					}
 				}, function(err, sails) {
 					Bulkhead.plugins.initialize(sails, function() {
