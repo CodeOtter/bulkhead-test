@@ -1,10 +1,11 @@
 var Suite = require('../index'),
 	assert = require('assert');
 
+Suite.lift();
+
 describe('Bulkhead-test', function() {
-	Suite.lift();
 	describe('Entry point', function() {
-		it('should be able to find accounts based on multiple types of criteria', function(done) {
+		it('should be able to launch a test', function(done) {
 			done();
 		});
 	});

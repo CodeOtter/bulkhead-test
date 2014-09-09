@@ -1,7 +1,9 @@
 var Sails = require('sails'),
-Barrels = require('barrels'),
-supertest = require('supertest'),
-fs = require('fs');
+	Barrels = require('barrels'),
+	supertest = require('supertest'),
+	fs = require('fs'),
+	Bulkhead = require('bulkhead'),
+	_ = require('underscore');
 
 module.exports = {
 
@@ -9,25 +11,24 @@ module.exports = {
 	fixtures: null,
 	
 	/**
-	 * 
-	 * @returns
+	 * Returns a supertest instance to quickly test HTTP requests against the Sails app
+	 * @returns	Supertest
 	 */
 	rest: function() {
 		return supertest(this.singleton.hooks.http.app);
 	},
 	
 	/**
-	 * 
-	 * @param beforeCb
-	 * @param afterCb
-	 * @param settings
+	 * Activates an instance of the Sails application during a test
+	 * @param	Function	The Mocha Before/Setup handler
+	 * @param	Function	The Mocha After/Teardown handler
+	 * @param	Object		The configuration of the Sails application
 	 */
 	lift: function(beforeCb, afterCb, settings) {
 		var self = this;
 		if(this.singleton === null) {
 			before(function(done) {
-				// @TODO: Create a test database if it doesn't exist
-				Sails.lift(settings || {
+				Sails.lift(_.extend({
 					log: {
 						level: 'error'
 					},
@@ -40,30 +41,49 @@ module.exports = {
 						    password: 'root', 
 						    database: 'test'
 						  }
+					},
+					globals: {
+						_: true,
+						async: true,
+						sails: true,
+						services: true,
+						models: true
+					},
+					models: {
+						migrate: 'alter'
 					}
-				}, function(err, sails) {
-					self.singleton = sails;
+				}, settings || {}), function(err, sails) {
+					
+					// Initialize all Bulkhead packages
+					Bulkhead.plugins.initialize(sails, function() {
 
-					if(fs.existsSync(process.cwd() + '/test/fixtures')) {
-						// Fixtures exist
-						Barrels.load();	
-					}
+						self.singleton = sails;
 
-					if(Object.keys(Barrels.objects).length > 0) {
-						// Put in a placeholder just in case nothing loads
-						Barrels.populate(function(barrelErr) {
-							// Populate the DB
-							if(barrelErr) {
-								console.log(barrelErr);
-								throw barrelErr;
-							}
+						if(fs.existsSync(process.cwd() + '/test/fixtures')) {
+							// Fixtures exist, load them into the database
+							Barrels.load();	
+						}
 
-							// Clear the test redis
-							//QueueService.queue('test').client.flushdb(function() {
-							//	done(err, sails);
-							//});
-							self.fixtures = Barrels.objects;
+						if(Object.keys(Barrels.objects).length > 0) {
+							// Put in a placeholder just in case nothing loads
+							Barrels.populate(function(barrelErr) {
+								// Populate the DB
+								if(barrelErr) {
+									console.log(barrelErr);
+									throw barrelErr;
+								}
 
+								self.fixtures = Barrels.objects;
+
+								if(beforeCb) {
+									beforeCb(sails, function(err) {
+										done(err, sails);
+									});
+								} else {
+									done(null, sails);
+								}
+							});
+						} else {
 							if(beforeCb) {
 								beforeCb(sails, function(err) {
 									done(err, sails);
@@ -71,19 +91,12 @@ module.exports = {
 							} else {
 								done(null, sails);
 							}
-						});
-					} else {
-						if(beforeCb) {
-							beforeCb(sails, function(err) {
-								done(err, sails);
-							});
-						} else {
-							done(null, sails);
 						}
-					}
+					});
 				});	
 			});
-			
+
+			// Tear down the sails app when the test is done
 			after(function(done) {
 				if(afterCb) {
 					afterCb(sails);

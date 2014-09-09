@@ -1,6 +1,6 @@
 {
   "name": "bulkhead-test",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "A functional testing suite for Bulkhead services.",
   "main": "index.js",
   "scripts": {
@@ -32,6 +32,7 @@
   "dependencies": {
     "barrels": "0.0.4",
     "mocha": "^1.21.3",
-    "supertest": "^0.13.0"
+    "supertest": "^0.13.0",
+    "bulkhead": "0.0.5"
   }
 }
