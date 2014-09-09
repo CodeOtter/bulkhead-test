@@ -2,7 +2,8 @@ var Sails = require('sails'),
 	Barrels = require('barrels'),
 	supertest = require('supertest'),
 	fs = require('fs'),
-	Bulkhead = require('bulkhead');
+	Bulkhead = require('bulkhead'),
+	_ = require('underscore');
 
 module.exports = {
 
@@ -10,24 +11,24 @@ module.exports = {
 	fixtures: null,
 	
 	/**
-	 * 
-	 * @returns
+	 * Returns a supertest instance to quickly test HTTP requests against the Sails app
+	 * @returns	Supertest
 	 */
 	rest: function() {
 		return supertest(this.singleton.hooks.http.app);
 	},
 	
 	/**
-	 * 
-	 * @param beforeCb
-	 * @param afterCb
-	 * @param settings
+	 * Activates an instance of the Sails application during a test
+	 * @param	Function	The Mocha Before/Setup handler
+	 * @param	Function	The Mocha After/Teardown handler
+	 * @param	Object		The configuration of the Sails application
 	 */
 	lift: function(beforeCb, afterCb, settings) {
 		var self = this;
 		if(this.singleton === null) {
 			before(function(done) {
-				Sails.lift(settings || {
+				Sails.lift(_.extend({
 					log: {
 						level: 'error'
 					},
@@ -51,13 +52,15 @@ module.exports = {
 					models: {
 						migrate: 'alter'
 					}
-				}, function(err, sails) {
+				}, settings || {}), function(err, sails) {
+					
+					// Initialize all Bulkhead packages
 					Bulkhead.plugins.initialize(sails, function() {
-						// Initialize all plugins
+
 						self.singleton = sails;
 
 						if(fs.existsSync(process.cwd() + '/test/fixtures')) {
-							// Fixtures exist
+							// Fixtures exist, load them into the database
 							Barrels.load();	
 						}
 
@@ -70,10 +73,6 @@ module.exports = {
 									throw barrelErr;
 								}
 
-								// Clear the test redis
-								//QueueService.queue('test').client.flushdb(function() {
-								//	done(err, sails);
-								//});
 								self.fixtures = Barrels.objects;
 
 								if(beforeCb) {
@@ -96,7 +95,8 @@ module.exports = {
 					});
 				});	
 			});
-			
+
+			// Tear down the sails app when the test is done
 			after(function(done) {
 				if(afterCb) {
 					afterCb(sails);
