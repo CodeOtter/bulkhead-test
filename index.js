@@ -1,4 +1,5 @@
-var Sails = require('sails'),
+var //Sails = require('sails'),
+	Sails = require('sails/lib/app'),
 	Barrels = require('barrels'),
 	supertest = require('supertest'),
 	fs = require('fs'),
@@ -26,38 +27,51 @@ module.exports = {
 	 */
 	lift: function(beforeCb, afterCb, settings) {
 		var self = this;
-		if(this.singleton === null) {
+		if(self.singleton === null) {
 			before(function(done) {
-				Sails.lift(_.extend({
-					log: {
-						level: 'error'
-					},
-					adapters: {
-						'default': 'mysql',
-						  mysql: {
-						    module : 'sails-mysql',
-						    host    : 'localhost',
-						    user    : 'root',
-						    password: 'root', 
-						    database: 'test'
-						  }
-					},
-					globals: {
-						_: true,
-						async: true,
-						sails: true,
-						services: true,
-						models: true
-					},
-					models: {
-						migrate: 'alter'
-					}
-				}, settings || {}), function(err, sails) {
-					
+				var config, configPath = process.cwd() + '/config/env/' + process.env.NODE_ENV + '.js';
+
+				if(!fs.existsSync(configPath)) {
+					// Use a Sails Project configuration
+					config = _.extend({
+						log: {
+							level: 'error'
+						},
+						connections: {
+							'default': 'mysql',
+							mysql: {
+							    module : 'sails-mysql',
+							    host    : 'localhost',
+							    user    : 'root',
+							    password: 'root', 
+							    database: 'test'
+							}
+						},
+						globals: {
+							_: true,
+							async: true,
+							sails: true,
+							services: true,
+							models: true
+						},
+						models: {
+							connection: 'mysql',
+							migrate: 'alter'
+						},
+						hooks: {
+							grunt: false
+						}
+					}, settings || {});
+				}
+
+				self.singleton = new Sails();
+				console.log('lifting');
+				self.singleton.lift(config, function(err, sails) {
+					console.log('lifted');
+					console.error(sails.adapters);
+
 					// Initialize all Bulkhead packages
 					Bulkhead.plugins.initialize(sails, function() {
-
-						self.singleton = sails;
 
 						if(fs.existsSync(process.cwd() + '/test/fixtures')) {
 							// Fixtures exist, load them into the database
@@ -102,8 +116,10 @@ module.exports = {
 					afterCb(sails);
 				}
 				if(self.singleton) {
+					console.log('lowering');
 					self.singleton.lower(function(err, results) {
 						self.singleton = null;
+						console.log('lowered');
 						done(err, results);
 					});
 				}
