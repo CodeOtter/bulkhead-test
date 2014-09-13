@@ -27,8 +27,8 @@ module.exports = {
 	 */
 	lift: function(beforeCb, afterCb, settings) {
 		var self = this;
-		if(self.singleton === null) {
-			before(function(done) {
+		before(function(done) {
+			if(self.singleton === null) {
 				var config, configPath = process.cwd() + '/config/env/' + process.env.NODE_ENV + '.js';
 
 				if(!fs.existsSync(configPath)) {
@@ -65,11 +65,7 @@ module.exports = {
 				}
 
 				self.singleton = new Sails();
-				console.log('lifting');
 				self.singleton.lift(config, function(err, sails) {
-					console.log('lifted');
-					console.error(sails.adapters);
-
 					// Initialize all Bulkhead packages
 					Bulkhead.plugins.initialize(sails, function() {
 
@@ -108,22 +104,17 @@ module.exports = {
 						}
 					});
 				});	
-			});
+			} else {
+				done(null, sails);
+			}
+		});
 
-			// Tear down the sails app when the test is done
-			after(function(done) {
-				if(afterCb) {
-					afterCb(sails);
-				}
-				if(self.singleton) {
-					console.log('lowering');
-					self.singleton.lower(function(err, results) {
-						self.singleton = null;
-						console.log('lowered');
-						done(err, results);
-					});
-				}
-			});
-		}
+		// Tear down the sails app when the test is done
+		after(function(done) {
+			if(afterCb) {
+				afterCb(sails);
+			}
+			done();
+		});
 	}
 };
