@@ -1,6 +1,6 @@
 {
   "name": "bulkhead-test",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "A functional testing suite for Bulkhead services.",
   "main": "index.js",
   "scripts": {
@@ -31,7 +31,7 @@
   "homepage": "https://github.com/CodeOtter/bulkhead-test",
   "dependencies": {
     "barrels": "0.0.4",
-    "bulkhead": "0.0.6",
+    "bulkhead": "0.0.7",
     "mocha": "^1.21.3",
     "supertest": "^0.13.0",
     "underscore": "^1.7.0"

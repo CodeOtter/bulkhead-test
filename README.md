@@ -21,16 +21,26 @@ A functional testing suite for Bulkhead services.  This package uses:
 
 ```
 var suite = require('bulkhead-test');
-suite.lift();
+  
+describe('A test category', function() {
+
+  suite.lift();  // You lift sails during in your suite description
+
+  describe('Some test', function() {
+  	it('should test', function(done) {
+      /* ... */
+      done();
+  });
+});
 ```
 
 To perform REST tests against the application, do the following:
 
 ```javascript
 var suite = require('bulkhead-test');
-  suite.lift();
   
 describe('A test category', function() {
+  suite.lift();
   describe('A category breakdown', function() {
     it('should do REST testing', function(done) {
       // Using suite.rest() will allow you to utilize the Supertest API
@@ -42,6 +52,6 @@ describe('A test category', function() {
       );
     })
   });
-})
+});
 ```
 For more help with REST testing, check out [supertest](https://github.com/visionmedia/supertest).

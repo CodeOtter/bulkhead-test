@@ -1,4 +1,5 @@
-var Sails = require('sails'),
+var //Sails = require('sails'),
+	Sails = require('sails/lib/app'),
 	Barrels = require('barrels'),
 	supertest = require('supertest'),
 	fs = require('fs'),
@@ -26,38 +27,47 @@ module.exports = {
 	 */
 	lift: function(beforeCb, afterCb, settings) {
 		var self = this;
-		if(this.singleton === null) {
-			before(function(done) {
-				Sails.lift(_.extend({
-					log: {
-						level: 'error'
-					},
-					adapters: {
-						'default': 'mysql',
-						  mysql: {
-						    module : 'sails-mysql',
-						    host    : 'localhost',
-						    user    : 'root',
-						    password: 'root', 
-						    database: 'test'
-						  }
-					},
-					globals: {
-						_: true,
-						async: true,
-						sails: true,
-						services: true,
-						models: true
-					},
-					models: {
-						migrate: 'alter'
-					}
-				}, settings || {}), function(err, sails) {
-					
+		before(function(done) {
+			if(self.singleton === null) {
+				var config, configPath = process.cwd() + '/config/env/' + process.env.NODE_ENV + '.js';
+
+				if(!fs.existsSync(configPath)) {
+					// Use a Sails Project configuration
+					config = _.extend({
+						log: {
+							level: 'error'
+						},
+						connections: {
+							'default': 'mysql',
+							mysql: {
+							    module : 'sails-mysql',
+							    host    : 'localhost',
+							    user    : 'root',
+							    password: 'root', 
+							    database: 'test'
+							}
+						},
+						globals: {
+							_: true,
+							async: true,
+							sails: true,
+							services: true,
+							models: true
+						},
+						models: {
+							connection: 'mysql',
+							migrate: 'alter'
+						},
+						hooks: {
+							grunt: false
+						}
+					}, settings || {});
+				}
+
+				self.singleton = new Sails();
+				self.singleton.lift(config, function(err, sails) {
 					// Initialize all Bulkhead packages
 					Bulkhead.plugins.initialize(sails, function() {
-
-						self.singleton = sails;
 
 						if(fs.existsSync(process.cwd() + '/test/fixtures')) {
 							// Fixtures exist, load them into the database
@@ -94,20 +104,17 @@ module.exports = {
 						}
 					});
 				});	
-			});
+			} else {
+				done(null, sails);
+			}
+		});
 
-			// Tear down the sails app when the test is done
-			after(function(done) {
-				if(afterCb) {
-					afterCb(sails);
-				}
-				if(self.singleton) {
-					self.singleton.lower(function(err, results) {
-						self.singleton = null;
-						done(err, results);
-					});
-				}
-			});
-		}
+		// Tear down the sails app when the test is done
+		after(function(done) {
+			if(afterCb) {
+				afterCb(sails);
+			}
+			done();
+		});
 	}
 };
